@@ -1,121 +1,64 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
+  <meta charset="UTF-8">
   <title>AI Startup Analyst</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style> pre { max-height: 380px; overflow:auto; } </style>
 </head>
-<body class="bg-light">
-  <div class="container py-5">
-    <div class="row justify-content-center">
-      <div class="col-md-8">
-        <div class="card shadow p-4 mb-4">
-          <h2 class="text-center mb-3">🚀 AI Startup Analyst</h2>
+<body>
+  <h1>AI Startup Analyst</h1>
 
-          <!-- MANUAL NUMBERS FORM -->
-          <form id="startupForm">
-            <div class="row g-2">
-              <div class="col-md-6">
-                <label class="form-label">Market</label>
-                <input type="number" class="form-control" id="market" step="0.1" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Business</label>
-                <input type="number" class="form-control" id="business" step="0.1" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Team</label>
-                <input type="number" class="form-control" id="team" step="0.1" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Traction</label>
-                <input type="number" class="form-control" id="traction" step="0.1" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Risk</label>
-                <input type="number" class="form-control" id="risk" step="0.1" required>
-              </div>
-            </div>
-            <div class="mt-3">
-              <button type="submit" class="btn btn-primary w-100">Analyze</button>
-            </div>
-          </form>
+  <!-- Manual form -->
+  <h2>Manual Data Entry</h2>
+  <form id="manualForm">
+    <label>Market: <input type="number" step="0.1" name="market"></label><br>
+    <label>Business: <input type="number" step="0.1" name="business"></label><br>
+    <label>Team: <input type="number" step="0.1" name="team"></label><br>
+    <label>Traction: <input type="number" step="0.1" name="traction"></label><br>
+    <label>Risk: <input type="number" step="0.1" name="risk"></label><br>
+    <button type="submit">Analyze</button>
+  </form>
 
-          <div id="manualResult" class="mt-4"></div>
-        </div>
+  <pre id="manualResult"></pre>
 
-        <!-- PDF upload card -->
-        <div class="card shadow p-4">
-          <h4>Upload Startup PDF</h4>
-          <form id="pdfForm" enctype="multipart/form-data" class="mb-3">
-            <input type="file" id="pdfFile" accept="application/pdf" class="form-control mb-2" required>
-            <button class="btn btn-outline-primary w-100" type="submit">Upload & Analyze</button>
-          </form>
+  <!-- PDF Upload -->
+  <h2>Upload Pitch Deck (PDF)</h2>
+  <form id="pdfForm" enctype="multipart/form-data">
+    <input type="file" name="file" accept="application/pdf">
+    <button type="submit">Upload & Analyze</button>
+  </form>
 
-          <h5>PDF Result:</h5>
-          <pre id="pdfResult" class="p-3 border rounded bg-white">No analysis yet.</pre>
-        </div>
-      </div>
-    </div>
-  </div>
+  <pre id="pdfResult"></pre>
 
-<script>
-  // === IMPORTANT: set API_BASE to your backend URL during local testing keep http://127.0.0.1:8000
-  // After deploying backend you will change this to the Render URL (e.g. https://your-backend.onrender.com)
-  const API_BASE = "https://ai-analyst-startup.onrender.com";
+  <script>
+    const API_BASE = "https://ai-analyst-startup.onrender.com";
 
-  // helper: pretty display
-  function showResult(container, obj) {
-    container.innerText = JSON.stringify(obj, null, 2);
-  }
+    // Manual form
+    document.getElementById("manualForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const body = Object.fromEntries(formData.entries());
 
-  // MANUAL form
-  document.getElementById('startupForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const payload = {
-      market: parseFloat(document.getElementById('market').value),
-      business: parseFloat(document.getElementById('business').value),
-      team: parseFloat(document.getElementById('team').value),
-      traction: parseFloat(document.getElementById('traction').value),
-      risk: parseFloat(document.getElementById('risk').value),
-    };
-    const r = await fetch(`${API_BASE}/analyze`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    if (!r.ok) {
-      document.getElementById('manualResult').innerHTML = `<div class="alert alert-danger">Error ${r.status}</div>`;
-      return;
-    }
-    const json = await r.json();
-    document.getElementById('manualResult').innerHTML = `<pre class="p-3 border rounded bg-white">${JSON.stringify(json, null, 2)}</pre>`;
-  });
-
-  // PDF upload
-  document.getElementById('pdfForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const fileEl = document.getElementById('pdfFile');
-    if (!fileEl.files.length) return;
-    const fd = new FormData();
-    fd.append('file', fileEl.files[0]);
-
-    try {
-      const r = await fetch(`${API_BASE}/analyze-pdf`, {
-        method: 'POST',
-        body: fd
+      const res = await fetch(`${API_BASE}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
-      if (!r.ok) {
-        document.getElementById('pdfResult').innerText = `Error: ${r.status} ${r.statusText}`;
-        return;
-      }
-      const json = await r.json();
-      showResult(document.getElementById('pdfResult'), json);
-    } catch (err) {
-      document.getElementById('pdfResult').innerText = 'Error: ' + err.message;
-    }
-  });
-</script>
+
+      document.getElementById("manualResult").textContent = await res.text();
+    };
+
+    // PDF form
+    document.getElementById("pdfForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+
+      const res = await fetch(`${API_BASE}/analyze-pdf`, {
+        method: "POST",
+        body: formData,
+      });
+
+      document.getElementById("pdfResult").textContent = await res.text();
+    };
+  </script>
 </body>
 </html>
