@@ -2,7 +2,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from scoring import compute_score
+from backend.scoring import compute_score
 import pypdf
 import io
 import re
