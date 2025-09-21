@@ -44,7 +44,7 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": API_KEY   // ✅ Add API key
+          "x-api-key":  "musecret123"  // ✅ Add API key
         },
         body: JSON.stringify(body),
       });
@@ -60,7 +60,7 @@
       const res = await fetch(`${API_BASE}/analyze-pdf`, {
         method: "POST",
         headers: {
-          "x-api-key": API_KEY   // ✅ Add API key
+          "x-api-key": "musecret123"  // ✅ Add API key
         },
         body: formData,
       });
