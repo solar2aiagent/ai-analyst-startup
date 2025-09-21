@@ -8,31 +8,30 @@
   <h1>AI Startup Analyst</h1>
 
   <!-- Manual form -->
-  <h2>Manual Data Entry</h2>
+  <h2>Manual Input</h2>
   <form id="manualForm">
-    <label>Market: <input type="number" step="0.1" name="market"></label><br>
-    <label>Business: <input type="number" step="0.1" name="business"></label><br>
-    <label>Team: <input type="number" step="0.1" name="team"></label><br>
-    <label>Traction: <input type="number" step="0.1" name="traction"></label><br>
-    <label>Risk: <input type="number" step="0.1" name="risk"></label><br>
+    <label>Market: <input type="number" name="market" required></label><br>
+    <label>Business: <input type="number" name="business" required></label><br>
+    <label>Team: <input type="number" name="team" required></label><br>
+    <label>Traction: <input type="number" name="traction" required></label><br>
+    <label>Risk: <input type="number" name="risk" required></label><br>
     <button type="submit">Analyze</button>
   </form>
-
   <pre id="manualResult"></pre>
 
   <!-- PDF Upload -->
   <h2>Upload Pitch Deck (PDF)</h2>
   <form id="pdfForm" enctype="multipart/form-data">
-    <input type="file" name="file" accept="application/pdf">
+    <input type="file" name="file" accept="application/pdf" required>
     <button type="submit">Upload & Analyze</button>
   </form>
-
   <pre id="pdfResult"></pre>
 
   <script>
-    const API_BASE = https://ai-analyst-startup-frontend.onrender.com
+    // Your backend API URL
+    const API_BASE = "https://ai-analyst-startup.onrender.com";
 
-    // Manual form
+    // Manual form handler
     document.getElementById("manualForm").onsubmit = async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
@@ -40,24 +39,30 @@
 
       const res = await fetch(`${API_BASE}/analyze`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": "musecret123"
+        },
+        body: JSON.stringify(body)
       });
-
-      document.getElementById("manualResult").textContent = await res.text();
+      const data = await res.json();
+      document.getElementById("manualResult").textContent = JSON.stringify(data, null, 2);
     };
 
-    // PDF form
+    // PDF upload handler
     document.getElementById("pdfForm").onsubmit = async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
 
       const res = await fetch(`${API_BASE}/analyze-pdf`, {
         method: "POST",
-        body: formData,
+        headers: {
+          "x-api-key": "musecret123"
+        },
+        body: formData
       });
-
-      document.getElementById("pdfResult").textContent = await res.text();
+      const data = await res.json();
+      document.getElementById("pdfResult").textContent = JSON.stringify(data, null, 2);
     };
   </script>
 </body>
