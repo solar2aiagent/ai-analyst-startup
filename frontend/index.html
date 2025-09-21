@@ -1,14 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>AI Startup Analyst</title>
 </head>
 <body>
   <h1>AI Startup Analyst</h1>
 
-  <!-- Manual Input Form -->
   <h2>Manual Input</h2>
   <form id="manualForm">
     <label>Market: <input type="number" name="market" required /></label><br />
@@ -20,7 +19,6 @@
   </form>
   <pre id="manualResult"></pre>
 
-  <!-- PDF Upload Form -->
   <h2>Upload Pitch Deck (PDF)</h2>
   <form id="pdfform" enctype="multipart/form-data">
     <input type="file" name="file" accept="application/pdf" required />
@@ -28,45 +26,62 @@
   </form>
   <pre id="pdfResult"></pre>
 
-  <script>
-    // Backend API URL
-    const API_BASE = "https://ai-analyst-startup.onrender.com";  
-    // API Key (must match the one you set in Render backend environment variables)
-    const API_KEY = "musecret123";
+<script>
+  // Backend endpoint (your backend URL)
+  const API_BASE = "https://ai-analyst-startup.onrender.com";
 
-    // ---------- Manual form ----------
-    document.getElementById("manualForm").onsubmit = async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const body = Object.fromEntries(formData.entries());
+  // Note: embedding a secret here exposes it publicly.
+  // For now this must match the backend environment variable for demo/testing.
+  const API_KEY = "musecret123";
 
-      const res = await fetch(`${API_BASE}/analyze`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_KEY   // ✅ using variable
-        },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      document.getElementById("manualResult").innerText = JSON.stringify(data, null, 2);
-    };
+  async function handleResponse(res, outputEl) {
+    if (!res.ok) {
+      // Try to read JSON error if available, otherwise text
+      let text;
+      try { text = await res.json(); }
+      catch(e) { text = await res.text().catch(()=>res.statusText); }
+      outputEl.innerText = `Error ${res.status} ${res.statusText}\n\n${JSON.stringify(text,null,2)}`;
+      return null;
+    }
+    const data = await res.json();
+    outputEl.innerText = JSON.stringify(data, null, 2);
+    return data;
+  }
 
-    // ---------- PDF form ----------
-    document.getElementById("pdfform").onsubmit = async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
+  document.getElementById("manualForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const body = Object.fromEntries(formData.entries());
 
-      const res = await fetch(`${API_BASE}/analyze-pdf`, {
-        method: "POST",
-        headers: {
-          "x-api-key": API_KEY   // ✅ using variable
-        },
-        body: formData,
-      });
-      const data = await res.json();
-      document.getElementById("pdfResult").innerText = JSON.stringify(data, null, 2);
-    };
-  </script>
+    // debug: show what will be sent
+    console.log("Sending manual:", body);
+
+    const res = await fetch(`${API_BASE}/analyze`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY
+      },
+      body: JSON.stringify(body),
+    });
+    await handleResponse(res, document.getElementById("manualResult"));
+  };
+
+  document.getElementById("pdfform").onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    console.log("Uploading PDF, headers will include x-api-key");
+
+    const res = await fetch(`${API_BASE}/analyze-pdf`, {
+      method: "POST",
+      headers: {
+        "x-api-key": API_KEY
+      },
+      body: formData,
+    });
+    await handleResponse(res, document.getElementById("pdfResult"));
+  };
+</script>
 </body>
 </html>
