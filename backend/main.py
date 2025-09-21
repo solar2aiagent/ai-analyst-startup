@@ -1,29 +1,47 @@
 # backend/main.py
-from fastapi import FastAPI, UploadFile, File
+
+import os
+import re
+import io
+import pypdf
+from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from backend.scoring import compute_score
-import pypdf
-import io
-import re
 
+# Create FastAPI app
 app = FastAPI()
 
-# Allow CORS (currently open to all — later restrict to frontend domain)
+# -------- Secure CORS (only allow your frontend) --------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://ai-analyst-startup-frontend.onrender.com"],  # only your frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---------- Health check / Home ----------
+# -------- API Key protection --------
+API_KEY = os.getenv("API_KEY", None)
+
+@app.middleware("http")
+async def check_api_key(request: Request, call_next):
+    if request.method == "OPTIONS":  # allow preflight
+        return await call_next(request)
+
+    if API_KEY:  # only check if API_KEY is set
+        key = request.headers.get("x-api-key")
+        if key != API_KEY:
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    return await call_next(request)
+
+# -------- Health check --------
 @app.get("/")
 def home():
     return {"message": "Backend is working ✅"}
 
-# ---------- Manual entry (numbers form) ----------
+# -------- Manual entry (numbers form) --------
 class StartupData(BaseModel):
     market: float
     business: float
@@ -41,18 +59,13 @@ def analyze_startup(data: StartupData):
         risk=data.risk,
     )
 
-# ---------- PDF upload / analysis ----------
+# -------- PDF upload / analysis --------
 def extract_scores_from_text(text: str):
-    """
-    Simple heuristic extractor:
-    - Looks around keywords for numbers 0..100.
-    - If nothing found for a field, fallback to median-ish default (5).
-    """
     text_lower = text.lower()
     numbers = [float(x) for x in re.findall(r"\b(\d{1,3}(?:\.\d+)?)\b", text_lower)]
 
     def normalize_val(v):
-        if v > 10 and v <= 100:  # treat as percentage -> scale to 0-10
+        if v > 10 and v <= 100:
             return round(v / 10.0, 2)
         return round(v, 2)
 
@@ -66,14 +79,13 @@ def extract_scores_from_text(text: str):
             return normalize_val(float(found[0]))
         return None
 
-    market = find_near("market") or find_near("addressable")
-    business = find_near("business") or find_near("model")
-    team = find_near("team") or find_near("founder")
-    traction = find_near("traction") or find_near("users") or find_near("growth")
-    risk = find_near("risk") or find_near("challenge")
+    market = find_near("market") or find_near("addressable") or None
+    business = find_near("business") or find_near("model") or None
+    team = find_near("team") or find_near("founder") or None
+    traction = find_near("traction") or find_near("users") or find_near("growth") or None
+    risk = find_near("risk") or find_near("challenge") or None
 
     fallback = [normalize_val(x) for x in numbers] if numbers else []
-
     def fallback_take(val):
         if val is not None:
             return val
